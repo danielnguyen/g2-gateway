@@ -57,7 +57,7 @@ export type OrchestratorTurnRequest = {
     min_score: number;
     scope: 'owner';
     time_window: 'all';
-    retrieval_mode: 'balanced';
+    retrieval_mode: 'recent' | 'balanced' | 'historical';
   };
   response_mode: 'normal' | 'brief';
   brief_depth?: 0 | 1 | 2 | 3;
