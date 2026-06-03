@@ -10,7 +10,7 @@ export class ChatOrchestratorClient {
     this.apiKey = config.CHAT_ORCHESTRATOR_API_KEY;
   }
 
-  async sendTurn(payload: OrchestratorTurnRequest): Promise<string> {
+  async sendTurn(payload: OrchestratorTurnRequest): Promise<OrchestratorTurnResponse> {
     const url = new URL('/v1/chat', this.baseUrl);
     const headers: Record<string, string> = {
       'content-type': 'application/json'
@@ -31,7 +31,6 @@ export class ChatOrchestratorClient {
       throw new Error(`chat-orchestrator returned ${response.status}: ${body.slice(0, 500)}`);
     }
 
-    const data = (await response.json()) as OrchestratorTurnResponse;
-    return data.answer ?? data.response ?? data.text ?? data.message ?? JSON.stringify(data);
+    return (await response.json()) as OrchestratorTurnResponse;
   }
 }
