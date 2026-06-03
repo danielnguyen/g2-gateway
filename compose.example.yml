@@ -1,0 +1,21 @@
+services:
+  g2-gateway:
+    image: ghcr.io/danielnguyen/g2-gateway:latest
+    container_name: g2-gateway
+    restart: unless-stopped
+    environment:
+      PORT: "8000"
+      HOST: 0.0.0.0
+      G2_GATEWAY_TOKEN: ${G2_GATEWAY_TOKEN}
+      CHAT_ORCHESTRATOR_URL: http://chat-orchestrator:8000
+      CHAT_ORCHESTRATOR_API_KEY: ${CHAT_ORCHESTRATOR_API_KEY:-}
+      CORS_ORIGIN: "*"
+    networks:
+      - cloudflare-egress
+      - llm-internal
+
+networks:
+  cloudflare-egress:
+    external: true
+  llm-internal:
+    external: true
