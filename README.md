@@ -4,14 +4,14 @@ Wearable-safe gateway between an Even Realities G2 app and the LLM Memory stack.
 
 ## Purpose
 
-`g2-gateway` is a narrow public-facing adapter. It should be exposed through Cloudflare Tunnel at `g2.dann.cloud` and should not expose Node-RED, chat-orchestrator, or basic-memory-store directly.
+`g2-gateway` is a narrow public-facing adapter. It should be exposed through a private tunnel or reverse proxy and should not expose Node-RED, chat-orchestrator, or basic-memory-store directly.
 
 Expected route:
 
 ```text
 Even G2 app
-→ https://g2.dann.cloud/g2/turn
-→ Cloudflare Tunnel
+→ https://<gateway-host>/g2/turn
+→ private tunnel / reverse proxy
 → g2-gateway
 → chat-orchestrator /v1/chat
 ```
@@ -66,4 +66,4 @@ Run with compose using `compose.example.yml`, adjusting the internal Docker netw
 
 ## Security boundary
 
-Do not place Cloudflare Access service-token secrets or internal app API keys in the Even G2 app. The G2 app should only know the narrow gateway token. The gateway is responsible for internal calls.
+Do not place tunnel provider service-token secrets or internal app API keys in the Even G2 app. The G2 app should only know the narrow gateway token. The gateway is responsible for internal calls.
