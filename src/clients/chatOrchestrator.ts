@@ -3,7 +3,7 @@ import type { OrchestratorTurnRequest, OrchestratorTurnResponse } from '../model
 
 export class ChatOrchestratorClient {
   private readonly baseUrl: URL;
-  private readonly apiKey?: string;
+  private readonly apiKey: string | undefined;
 
   constructor(config: Pick<AppConfig, 'CHAT_ORCHESTRATOR_URL' | 'CHAT_ORCHESTRATOR_API_KEY'>) {
     this.baseUrl = new URL(config.CHAT_ORCHESTRATOR_URL);
