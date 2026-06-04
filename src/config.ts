@@ -4,7 +4,7 @@ const EnvSchema = z.object({
   NODE_ENV: z.string().default('development'),
   PORT: z.coerce.number().int().positive().default(8000),
   HOST: z.string().default('0.0.0.0'),
-  G2_GATEWAY_TOKEN: z.string().min(24),
+  G2_GATEWAY_TOKEN: z.string(),
   G2_OWNER_ID: z.string().min(1),
   G2_CLIENT_ID: z.string().min(1).default('even-realities-g2'),
   CHAT_ORCHESTRATOR_URL: z.string().url(),
