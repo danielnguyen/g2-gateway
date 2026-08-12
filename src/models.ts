@@ -18,6 +18,7 @@ export const G2PageResponseSchema = z.object({
   pages: z.array(z.string()).min(1),
   source: z.literal('chat-orchestrator'),
   status: z.enum(['ok', 'degraded', 'failed']).optional(),
+  conversation_disposition: z.literal('non_current').optional(),
   raw_length: z.number().int().nonnegative()
 });
 
@@ -67,10 +68,11 @@ export type OrchestratorTurnRequest = {
 
 export type OrchestratorTurnResponse = {
   request_id: string;
-  conversation_id: string;
+  conversation_id?: string;
   profile_name: string;
   selected_model: string;
   answer: string;
   status: 'ok' | 'degraded' | 'failed';
   sources: Array<Record<string, unknown>>;
+  conversation_disposition?: 'non_current';
 };
