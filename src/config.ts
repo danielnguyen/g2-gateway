@@ -9,6 +9,8 @@ const EnvSchema = z.object({
   G2_CLIENT_ID: z.string().min(1).default('even-realities-g2'),
   CHAT_ORCHESTRATOR_URL: z.string().url(),
   CHAT_ORCHESTRATOR_API_KEY: z.string().optional(),
+  STT_PROVIDER: z.literal('deepgram').default('deepgram'),
+  DEEPGRAM_API_KEY: z.string().optional(),
   CORS_ORIGIN: z.string().default('*')
 });
 

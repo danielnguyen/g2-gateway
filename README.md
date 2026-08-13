@@ -22,6 +22,7 @@ Even G2 app
 GET  /health        unauthenticated health check
 GET  /g2/status     authenticated surface capability check
 POST /g2/turn       authenticated G2 turn endpoint
+POST /g2/stt/session authenticated short-lived STT token endpoint
 ```
 
 Authentication uses a simple bearer token:
@@ -44,6 +45,19 @@ Required environment:
 G2_GATEWAY_TOKEN=long random token
 CHAT_ORCHESTRATOR_URL=http://chat-orchestrator:8000
 ```
+
+Optional STT environment:
+
+```text
+STT_PROVIDER=deepgram
+DEEPGRAM_API_KEY=server-side-key
+```
+
+`STT_PROVIDER` defaults to `deepgram`. `DEEPGRAM_API_KEY` is optional at startup;
+when it is absent, `/g2/stt/session` returns `503 {"error":"stt_unavailable"}`
+without affecting non-STT gateway routes. Keep the permanent Deepgram key only in
+gateway environment or secret configuration. The endpoint returns a short-lived
+provider token and the provider-supplied expiry for direct client-to-provider audio.
 
 ## Example request
 

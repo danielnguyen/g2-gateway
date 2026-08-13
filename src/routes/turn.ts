@@ -28,6 +28,9 @@ export async function registerTurnRoutes(app: FastifyInstance, config: AppConfig
         pages: paginateText(result.answer),
         source: 'chat-orchestrator',
         status: result.status,
+        ...(result.conversation_disposition
+          ? { conversation_disposition: result.conversation_disposition }
+          : {}),
         raw_length: result.answer.length
       });
     } catch (error) {

@@ -2,9 +2,11 @@ import 'dotenv/config';
 import cors from '@fastify/cors';
 import Fastify from 'fastify';
 import { makeBearerAuth } from './auth.js';
+import { createSttTokenProvider } from './clients/stt.js';
 import { loadConfig } from './config.js';
 import { registerHealthRoutes } from './routes/health.js';
 import { registerStatusRoutes } from './routes/status.js';
+import { registerSttRoutes } from './routes/stt.js';
 import { registerTurnRoutes } from './routes/turn.js';
 
 async function main(): Promise<void> {
@@ -29,6 +31,7 @@ async function main(): Promise<void> {
   });
 
   await registerStatusRoutes(app);
+  await registerSttRoutes(app, createSttTokenProvider(config));
   await registerTurnRoutes(app, config);
 
   await app.listen({
