@@ -52,6 +52,7 @@ function buildOrchestratorPayload(turn: G2TurnRequest, config: AppConfig): Orche
     client_id: config.G2_CLIENT_ID,
     ...(turn.conversation_id ? { conversation_id: turn.conversation_id } : {}),
     surface: 'g2',
+    requested_scene: 'companion',
     surface_context: {
       surface_type: 'wearable_hud',
       interaction_mode: isVoiceMediated ? 'voice_mediated' : 'text',
@@ -78,13 +79,17 @@ function buildOrchestratorPayload(turn: G2TurnRequest, config: AppConfig): Orche
       }
     ],
     sensitivity: 'private',
-    retrieval: {
-      k: 6,
-      min_score: 0.25,
-      scope: 'owner',
-      time_window: 'all',
-      retrieval_mode: turn.mode === 'recall' ? 'historical' : 'balanced'
-    },
+    ...(turn.mode === 'recall'
+      ? {
+          retrieval: {
+            k: 6,
+            min_score: 0.25,
+            scope: 'owner' as const,
+            time_window: 'all' as const,
+            retrieval_mode: 'historical' as const
+          }
+        }
+      : {}),
     response_mode: isBrief ? 'brief' : 'normal',
     ...(isBrief ? { brief_depth: 1 as const } : {}),
     brief_type: briefTypeForMode(turn.mode),
