@@ -8,7 +8,7 @@ afterEach(() => {
 });
 
 describe('POST /g2/turn conversation continuity', () => {
-  it('forwards conversation_id and passes through a non_current disposition', async () => {
+  it('forwards conversation_id and uses server-owned defaults for an ordinary turn', async () => {
     const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(
       orchestratorResponse({ conversation_disposition: 'non_current' })
     );
@@ -36,7 +36,39 @@ describe('POST /g2/turn conversation continuity', () => {
     >;
     expect(upstreamBody.conversation_id).toBe('conversation-known');
     expect(upstreamBody).toMatchObject({
+      requested_scene: 'companion',
       surface_context: { interaction_mode: 'voice_mediated' }
+    });
+    expect(upstreamBody).not.toHaveProperty('retrieval');
+
+    await app.close();
+  });
+
+  it('keeps the explicit historical retrieval override for recall mode', async () => {
+    const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(orchestratorResponse());
+    vi.stubGlobal('fetch', fetchMock);
+    const app = await buildTestApp();
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/g2/turn',
+      payload: { mode: 'recall', text: 'Recall the earlier details' }
+    });
+
+    expect(response.statusCode).toBe(200);
+    const upstreamBody = JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body)) as Record<
+      string,
+      unknown
+    >;
+    expect(upstreamBody).toMatchObject({
+      requested_scene: 'companion',
+      retrieval: {
+        k: 6,
+        min_score: 0.25,
+        scope: 'owner',
+        time_window: 'all',
+        retrieval_mode: 'historical'
+      }
     });
 
     await app.close();
