@@ -29,6 +29,7 @@ export type OrchestratorTurnRequest = {
   client_id: string;
   conversation_id?: string;
   surface: 'g2';
+  requested_scene: 'companion';
   surface_context: {
     surface_type: 'wearable_hud';
     interaction_mode: 'text' | 'voice_mediated';
@@ -53,7 +54,7 @@ export type OrchestratorTurnRequest = {
     content: string;
   }>;
   sensitivity: 'private';
-  retrieval: {
+  retrieval?: {
     k: number;
     min_score: number;
     scope: 'owner';
