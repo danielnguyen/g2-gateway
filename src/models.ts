@@ -25,6 +25,8 @@ export const G2PageResponseSchema = z.object({
 export type G2PageResponse = z.infer<typeof G2PageResponseSchema>;
 
 export type OrchestratorTurnRequest = {
+  allow_deferred: true;
+  delivery_wait_ms: number;
   owner_id: string;
   client_id: string;
   conversation_id?: string;
@@ -77,3 +79,63 @@ export type OrchestratorTurnResponse = {
   sources: Array<Record<string, unknown>>;
   conversation_disposition?: 'non_current';
 };
+
+const WorkIdSchema = z.string().regex(
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
+);
+const RequestIdSchema = z.string().min(1).max(120).regex(/^[A-Za-z0-9][A-Za-z0-9._:-]*$/);
+
+export const G2WorkParamsSchema = z.object({ work_id: WorkIdSchema });
+// Extra query fields cannot supply owner authority; only conversation_id is consumed.
+export const G2WorkQuerySchema = z.object({ conversation_id: WorkIdSchema });
+
+export const OrchestratorDeferredResponseSchema = z.object({
+  request_id: RequestIdSchema,
+  conversation_id: WorkIdSchema,
+  work_id: WorkIdSchema,
+  delivery_status: z.literal('pending')
+}).strict();
+
+export type OrchestratorSubmission =
+  | { status: 200; result: OrchestratorTurnResponse }
+  | { status: 202; result: z.infer<typeof OrchestratorDeferredResponseSchema> };
+
+export const G2DeferredResponseSchema = OrchestratorDeferredResponseSchema.extend({
+  title: z.string(),
+  source: z.literal('chat-orchestrator')
+});
+export type G2DeferredResponse = z.infer<typeof G2DeferredResponseSchema>;
+
+const WorkFailureSchema = z.enum([
+  'interrupted', 'execution_failed', 'dependency_unavailable', 'authority_unavailable'
+]);
+const WorkIdentitySchema = z.object({
+  work_id: WorkIdSchema,
+  conversation_id: WorkIdSchema,
+  request_id: RequestIdSchema
+});
+export const OrchestratorWorkResponseSchema = z.discriminatedUnion('state', [
+  WorkIdentitySchema.extend({
+    state: z.literal('pending'), failure_code: z.null(), result: z.null()
+  }).strict(),
+  WorkIdentitySchema.extend({
+    state: z.literal('running'), failure_code: z.null(), result: z.null()
+  }).strict(),
+  WorkIdentitySchema.extend({
+    state: z.literal('failed'), failure_code: WorkFailureSchema, result: z.null()
+  }).strict(),
+  WorkIdentitySchema.extend({
+    state: z.literal('completed'),
+    failure_code: z.null(),
+    result: z.object({ assistant_message_id: WorkIdSchema, answer: z.string() }).strict()
+  }).strict()
+]);
+export type OrchestratorWorkResponse = z.infer<typeof OrchestratorWorkResponseSchema>;
+
+export type G2WorkResponse = z.infer<typeof WorkIdentitySchema> & {
+  source: 'chat-orchestrator';
+} & (
+  | { state: 'pending' | 'running' }
+  | { state: 'failed'; failure_code: z.infer<typeof WorkFailureSchema> }
+  | { state: 'completed'; pages: string[]; raw_length: number }
+);
