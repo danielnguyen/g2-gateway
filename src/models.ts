@@ -127,7 +127,10 @@ export const OrchestratorWorkResponseSchema = z.discriminatedUnion('state', [
   WorkIdentitySchema.extend({
     state: z.literal('completed'),
     failure_code: z.null(),
-    result: z.object({ assistant_message_id: WorkIdSchema, answer: z.string() }).strict()
+    result: z.object({
+      assistant_message_id: WorkIdSchema,
+      answer: z.string().refine((answer) => /\S/.test(answer), 'Answer must contain non-whitespace text')
+    }).strict()
   }).strict()
 ]);
 export type OrchestratorWorkResponse = z.infer<typeof OrchestratorWorkResponseSchema>;

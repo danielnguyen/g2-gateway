@@ -1,6 +1,7 @@
 import Fastify from 'fastify';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { loadConfig } from '../src/config.js';
+import { OrchestratorWorkResponseSchema } from '../src/models.js';
 import { paginateText } from '../src/pagination.js';
 import { registerTurnRoutes } from '../src/routes/turn.js';
 
@@ -218,6 +219,32 @@ describe('POST /g2/turn delivery', () => {
 });
 
 describe('GET /g2/work-items/:work_id', () => {
+  it.each(['', '   \n\t'])('rejects blank completed answer %j without fallback or resubmission', async (answer) => {
+    const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(jsonResponse({
+      ...workProjection('completed'), result: { assistant_message_id: messageId, answer }
+    }));
+    vi.stubGlobal('fetch', fetchMock);
+    const app = await buildTestApp();
+    const response = await app.inject({ method: 'GET', url: statusUrl() });
+    expect(response.statusCode).toBe(502);
+    expect(response.json()).toEqual({ error: 'upstream_error' });
+    expect(response.json()).not.toHaveProperty('pages');
+    expect(response.json()).not.toHaveProperty('answer');
+    expect(response.body).not.toContain('No response.');
+    assertStatusCalls(fetchMock, 1);
+    await app.close();
+  });
+
+  it.each(['Canonical answer', ' Answer with surrounding whitespace ', '\nCanonical\nanswer\n'])(
+    'preserves canonical answer %j unchanged during schema validation', (answer) => {
+      const parsed = OrchestratorWorkResponseSchema.parse({
+        ...workProjection('completed'), result: { assistant_message_id: messageId, answer }
+      });
+      expect(parsed.state).toBe('completed');
+      expect(parsed.result?.answer).toBe(answer);
+    }
+  );
+
   it.each(['transport', 'http', 'schema'])(
     'keeps %s failure logs free of private upstream content', async (failure) => {
       const sentinel = 'PRIVATE_UPSTREAM_ANSWER_SENTINEL';
