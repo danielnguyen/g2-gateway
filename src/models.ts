@@ -32,6 +32,7 @@ export type OrchestratorTurnRequest = {
   conversation_id?: string;
   surface: 'g2';
   requested_scene: 'companion';
+  requested_profile: 'mavis';
   surface_context: {
     surface_type: 'wearable_hud';
     interaction_mode: 'text' | 'voice_mediated';
