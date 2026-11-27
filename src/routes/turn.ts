@@ -100,6 +100,7 @@ function buildOrchestratorPayload(turn: G2TurnRequest, config: AppConfig): Orche
     ...(turn.conversation_id ? { conversation_id: turn.conversation_id } : {}),
     surface: 'g2',
     requested_scene: 'companion',
+    requested_profile: 'mavis',
     surface_context: {
       surface_type: 'wearable_hud',
       interaction_mode: isVoiceMediated ? 'voice_mediated' : 'text',

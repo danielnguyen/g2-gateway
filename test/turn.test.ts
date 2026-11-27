@@ -44,6 +44,7 @@ describe('POST /g2/turn conversation continuity', () => {
       allow_deferred: true,
       delivery_wait_ms: 15000,
       requested_scene: 'companion',
+      requested_profile: 'mavis',
       surface_context: { interaction_mode: 'voice_mediated' }
     });
     expect(upstreamBody).not.toHaveProperty('retrieval');
@@ -51,6 +52,58 @@ describe('POST /g2/turn conversation continuity', () => {
 
     await app.close();
   });
+
+  it.each(['ask', 'brief', 'recall', 'status'])(
+    'requests Mavis for an initial %s turn and follow-up despite HUD profile overrides', async (mode) => {
+      const fetchMock = vi.fn<typeof fetch>().mockImplementation(async () => orchestratorResponse());
+      vi.stubGlobal('fetch', fetchMock);
+      const app = await buildTestApp();
+      let conversation: string | undefined;
+
+      for (const inputMode of ['typed', 'voice_transcribed']) {
+        const response = await app.inject({
+          method: 'POST',
+          url: '/g2/turn',
+          payload: {
+            mode, input_mode: inputMode, text: 'Continue our conversation',
+            ...(conversation ? { conversation_id: conversation } : {}),
+            requested_profile: 'dev', owner_id: 'untrusted-owner', client_id: 'untrusted-client'
+          }
+        });
+
+        expect(response.statusCode).toBe(200);
+        const [url, init] = fetchMock.mock.calls.at(-1)!;
+        expect(String(url)).toBe('http://chat-orchestrator.test/v1/chat');
+        expect(init?.headers).toMatchObject({ 'x-api-key': 'co-test-key' });
+        const upstreamBody = JSON.parse(String(init?.body));
+        expect(upstreamBody).toMatchObject({
+          requested_profile: 'mavis', requested_scene: 'companion',
+          owner_id: 'owner-test', client_id: 'g2-test-client', surface: 'g2',
+          surface_context: {
+            surface_type: 'wearable_hud',
+            interaction_mode: inputMode === 'voice_transcribed' ? 'voice_mediated' : 'text',
+            spoken_output: false, active_task_mode: true, latency_preference: 'low',
+            verbosity_target: 'short', allows_expansion: false, output_format: 'plain_text',
+            style_envelope: {
+              directness: 'high', warmth: 'medium', playfulness_budget: 'none',
+              sentence_length: 'short', technical_density: 'low', formality_range: 'casual',
+              repetition_sensitivity: 'high'
+            }
+          }
+        });
+        if (conversation) {
+          expect(upstreamBody.conversation_id).toBe(conversation);
+        } else {
+          expect(upstreamBody).not.toHaveProperty('conversation_id');
+        }
+        conversation = response.json().conversation_id;
+        expect(conversation).toBe('conversation-known');
+      }
+
+      expect(fetchMock).toHaveBeenCalledTimes(2);
+      await app.close();
+    }
+  );
 
   it('keeps the explicit historical retrieval override for recall mode', async () => {
     const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(orchestratorResponse());
@@ -72,6 +125,7 @@ describe('POST /g2/turn conversation continuity', () => {
       allow_deferred: true,
       delivery_wait_ms: 15000,
       requested_scene: 'companion',
+      requested_profile: 'mavis',
       retrieval: {
         k: 6,
         min_score: 0.25,
@@ -171,7 +225,7 @@ describe('POST /g2/turn delivery', () => {
     expect(init?.headers).toMatchObject({ 'x-api-key': 'co-test-key' });
     expect(JSON.parse(String(init?.body))).toMatchObject({
       owner_id: 'owner-test', client_id: 'g2-test-client', conversation_id: conversationId,
-      surface: 'g2', requested_scene: 'companion', allow_deferred: true, delivery_wait_ms: 15000,
+      surface: 'g2', requested_scene: 'companion', requested_profile: 'mavis', allow_deferred: true, delivery_wait_ms: 15000,
       response_mode: ['brief', 'status'].includes(mode!) ? 'brief' : 'normal',
       brief_type: mode === 'status' ? 'project_status' : 'general', interrupt_policy_mode: 'off',
       ...(['brief', 'status'].includes(mode!) ? { brief_depth: 1 } : {})
